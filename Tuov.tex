@@ -1,0 +1,340 @@
+\documentclass[12pt,a4paper]{scrartcl} 
+\usepackage[utf8]{inputenc}
+\usepackage[english,russian]{babel}
+\usepackage{indentfirst}
+\usepackage{misccorr}
+\usepackage{graphicx}
+\usepackage{amsmath}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{float}
+\lstset{
+  language=C++,
+  basicstyle=\ttfamily\small,
+  keywordstyle=\color{blue},
+  commentstyle=\color{gray},
+  stringstyle=\color{green},
+  numberstyle=\tiny\color{gray},
+  stepnumber=1,
+  numbersep=10pt,
+  backgroundcolor=\color{white},
+  showspaces=false,
+  showstringspaces=false,
+  showtabs=false,
+  frame=none, 
+  tabsize=2,
+  captionpos=b,
+  breaklines=true,
+  breakatwhitespace=false,
+  title=\lstname
+}
+\begin{document}
+	\begin{titlepage}
+		\begin{center}
+			\large
+			МИНИСТЕРСТВО НАУКИ И ВЫСШЕГО ОБРАЗОВАНИЯ РОССИЙСКОЙ ФЕДЕРАЦИИ
+			
+			Федеральное государственное бюджетное образовательное учреждение высшего образования
+			
+			\textbf{АДЫГЕЙСКИЙ ГОСУДАРСТВЕННЫЙ УНИВЕРСИТЕТ}
+			\vspace{0.25cm}
+			
+			Инженерно-физический факультет
+			
+			Кафедра автоматизированных систем обработки информации и управления
+			\vfill
+			
+			\textsc{Отчет по практике}\\[5mm]
+			
+			{\LARGE Программная реализация структуры данных \textit{Хеш-таблицы}}
+			\bigskip
+			
+			2 курс, группа 2ИВТ АСОИУ
+		\end{center}
+		\vfill
+		
+		\newlength{\ML}
+		\settowidth{\ML}{«\underline{\hspace{0.7cm}}» \underline{\hspace{2cm}}}
+		\hfill\begin{minipage}{0.5\textwidth}
+			Выполнил:\\
+			\underline{\hspace{\ML}} Э.\,А.~Туов\\
+			«\underline{\hspace{0.7cm}}» \underline{\hspace{2cm}} 2025 г.
+		\end{minipage}%
+		\bigskip
+		
+		\hfill\begin{minipage}{0.5\textwidth}
+			Руководитель:\\
+			\underline{\hspace{\ML}} С.\,В.~Теплоухов\\
+			«\underline{\hspace{0.7cm}}» \underline{\hspace{2cm}} 2025 г.
+		\end{minipage}%
+		\vfill
+		
+		\begin{center}
+			Майкоп, 2025 г.
+		\end{center}
+	\end{titlepage}
+
+    \newpage
+
+\section{Введение}
+\label{sec:intro}
+
+\subsection{Текстовая формулировка задачи (Вариант 6)}
+Реализовать консольное приложение для работы с хеш-таблицей. Программа должна обеспечивать операции вставки, поиска и удаления элементов, а также отображение содержимого таблицы.
+
+\subsection{Теория метода}
+
+Хеш-таблица — это структура данных, представляющая собой массив с необычной адресацией, задаваемой хеш-функцией. Среднее время поиска элемента составляет \( O(1) \), а в наихудшем случае — \( O(n) \), что зависит от количества коллизий.
+
+Основные свойства хеш-таблицы:
+\begin{itemize}
+  \item Хеш-функция преобразует ключ в индекс массива, например, путем деления ключа на размер таблицы и взятия остатка.
+  \item Для разрешения коллизий используется метод связывания, где элементы с одинаковым хешем хранятся в линейных списках.
+  \item Хеш-функция должна быть быстрой и обеспечивать равномерное распределение ключей для минимизации коллизий.
+\end{itemize}
+
+Хеширование полезно для хранения большого диапазона значений в ограниченной памяти с быстрым доступом. Оно широко применяется в базах данных и компиляторах для таблиц идентификаторов. При вставке элемента ключ хешируется, и элемент добавляется в начало соответствующего списка. Поиск и удаление выполняются аналогично через хеш-функцию и линейный поиск в списке. Размер таблицы должен быть достаточным для минимизации коллизий.
+
+\section{Ход работы}
+\subsection{Выбор средств для разработки}
+
+Для реализации хеш-таблицы я выбрал стек технологий, состоящий из:
+\begin{itemize}
+    \item \textbf{C++} — основной язык разработки, обеспечивающий высокую производительность и гибкость;
+    \item \textbf{Шаблоны (templates)} — для создания универсального списка, используемого в хеш-таблице.
+\end{itemize}
+
+Целью было создать консольное приложение с интерактивным интерфейсом для управления хеш-таблицей.
+
+\subsection{Код приложения}
+
+В основе приложения лежит реализация хеш-таблицы с использованием пользовательского шаблонного списка, разделенного на несколько файлов. Ниже приведены фрагменты кода:
+
+\begin{itemize}
+    \item \textbf{Файл \texttt{list.h}:} Определение шаблонного класса \texttt{list}.
+\begin{lstlisting}[language=C++, caption=Файл list.h]
+#pragma once
+#include <iostream>
+using namespace std;
+
+template<class T>
+class list {
+public:
+	list();
+	void pop_front();
+	void pop_back();
+	void removeAt(int index);
+	void clear();
+	void push_back(T data);
+	void push_front(T data);
+	void insert(T data, int index);
+	void print();
+	int Get_size();
+	T& operator [](const int index);
+	bool contains(T data);
+	void remove_value(T data);
+	~list();
+
+private:
+	template<class T>
+	struct Node {
+		Node* ptr_next;
+		T data;
+		Node(T data = T(), Node* ptr_next = nullptr) {
+			this->data = data;
+			this->ptr_next = ptr_next;
+		}
+	};
+	int Size;
+	Node<T>* head;
+};
+\end{lstlisting}
+
+    \item \textbf{Файл \texttt{list.cpp}:} Реализация методов класса \texttt{list}.
+\begin{lstlisting}[language=C++, caption=Фрагмент list.cpp]
+template<class T>
+void list<T>::push_front(T data) {
+	Node<T>* current = new Node<T>(data);
+	current->ptr_next = head;
+	head = current;
+	Size++;
+}
+
+template<class T>
+void list<T>::print() {
+	Node<T>* current = head;
+	while (current) {
+		cout << current->data << " ";
+		current = current->ptr_next;
+	}
+}
+
+template<class T>
+list<T>::~list() {
+	clear();
+}
+
+template class list<int>; // Явное указание шаблона
+\end{lstlisting}
+
+    \item \textbf{Файл \texttt{Hash_Table.h}:} Определение класса \texttt{Hash_Table}.
+\begin{lstlisting}[language=C++, caption=Файл Hash_Table.h]
+#pragma once
+#include "list.h"
+#include <iostream>
+using namespace std;
+
+class Hash_Table
+{
+private:
+	static const int SIZE = 8;
+	list<int> table[SIZE];
+
+	int hash(int key) {
+		return key % SIZE;
+	}
+public:
+	void insert(int key);
+	void remove(int key);
+	void search(int key);
+	void display();
+};
+\end{lstlisting}
+
+    \item \textbf{Файл \texttt{Hash_Table.cpp}:} Реализация методов класса \texttt{Hash_Table}.
+\begin{lstlisting}[language=C++, caption=Фрагмент Hash_Table.cpp]
+void Hash_Table::insert(int key) {
+	int index = hash(key);
+	if (!table[index].contains(key)) {
+		table[index].push_front(key);
+		cout << "Элемент " << key << " добавлен.\n";
+	}
+	else {
+		cout << "Элемент уже существует.\n";
+	}
+}
+
+void Hash_Table::display() {
+	for (int i = 0; i < SIZE; i++) {
+		cout << "[" << i << "]: ";
+		table[i].print();
+		cout << endl;
+	}
+}
+\end{lstlisting}
+
+    \item \textbf{Файл \texttt{Source.cpp}:} Точка входа с интерактивным меню.
+\begin{lstlisting}[language=C++, caption=Фрагмент Source.cpp]
+int main() {
+	setlocale(LC_ALL, "Russian");
+	Hash_Table ht;
+	int choice, value;
+
+	do {
+		cout << "\nМеню:\n";
+		cout << "1. Вставить\n2. Удалить\n3. Поиск\n4. Печать\n0. Выход\n";
+		cout << "Выбор: ";
+		cin >> choice;
+
+		switch (choice) {
+		case 1:
+			cout << "Введите значение: ";
+			cin >> value;
+			ht.insert(value);
+			break;
+		case 4:
+			ht.display();
+			break;
+		case 0:
+			cout << "Выход.\n";
+			break;
+		}
+	} while (choice != 0);
+
+	return 0;
+}
+\end{lstlisting}
+\end{itemize}
+
+\subsection{Ключевые фрагменты кода}
+
+\textbf{Реализация списка (list):}
+\begin{lstlisting}[language=C++, caption=Метод push_front()]
+template<class T>
+void list<T>::push_front(T data) {
+	Node<T>* current = new Node<T>(data);
+	current->ptr_next = head;
+	head = current;
+	Size++;
+}
+\end{lstlisting}
+
+\textbf{Реализация хеш-таблицы (Hash_Table):}
+\begin{lstlisting}[language=C++, caption=Метод insert()]
+void Hash_Table::insert(int key) {
+	int index = hash(key);
+	if (!table[index].contains(key)) {
+		table[index].push_front(key);
+		cout << "Элемент " << key << " добавлен.\n";
+	}
+	else {
+		cout << "Элемент уже существует.\n";
+	}
+}
+\end{lstlisting}
+
+\textbf{Реализация поиска (Hash_Table):}
+\begin{lstlisting}[language=C++, caption=Метод search()]
+void Hash_Table::search(int key) {
+	int index = hash(key);
+	if (table[index].contains(key)) {
+		cout << "Элемент найден в бакете " << index << ".\n";
+	}
+	else {
+		cout << "Элемент не найден.\n";
+	}
+}
+\end{lstlisting}
+
+\textbf{Отображение таблицы (Hash_Table):}
+\begin{lstlisting}[language=C++, caption=Метод display()]
+void Hash_Table::display() {
+	for (int i = 0; i < SIZE; i++) {
+		cout << "[" << i << "]: ";
+		table[i].print();
+		cout << endl;
+	}
+}
+\end{lstlisting}
+
+\subsection{Описание архитектуры приложения}
+
+\begin{itemize}
+  \item \texttt{list.h} и \texttt{list.cpp} — содержат реализацию шаблонного класса \texttt{list} для управления связными списками.
+  \item \texttt{Hash_Table.h} и \texttt{Hash_Table.cpp} — содержат определение и реализацию класса \texttt{Hash_Table} с хеш-функцией и операциями над таблицей.
+  \item \texttt{Source.cpp} — главный файл с точкой входа и интерактивным меню для управления хеш-таблицей.
+\end{itemize}
+
+\section{Скриншоты программы}
+\label{sec:program-shots}
+
+На следующих изображениях представлены пример работы консольного приложения:
+
+\begin{figure}[H]
+    \centering
+    \includegraphics[width=0.7\linewidth]{console_output.png}
+    \caption{Пример работы программы}
+    \label{fig:console-output}
+\end{figure}
+
+\section{Источники}
+
+\begin{thebibliography}{9}
+\bibitem{Cormen-2009}Кормен Т.Х., Лейзерсон Ч.Е., Ривест Р.Л., Штайн К. Алгоритмы: построение и анализ. Москва: Вильямс, 2009 г.
+\bibitem{Stroustrup-2013}Струстрап Б. Программирование: принципы и практика с использованием C++. Москва: Вильямс, 2013 г.
+\bibitem{CppReference-2025}Документация C++ на cppreference.com. \url{https://en.cppreference.com}, 2025 г.
+\end{thebibliography}
+
+\section{Доступ к исходному коду и результатам работы}
+\item Репозиторий: \texttt{\url{https://github.com/PiVo-vrh/Hash-Table}}
+\end{document}
